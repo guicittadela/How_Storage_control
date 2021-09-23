@@ -73,6 +73,16 @@ namespace How.Properties {
         /// <summary>
         ///   Consulta um recurso localizado do tipo System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Ativo_11 {
+            get {
+                object obj = ResourceManager.GetObject("Ativo 11", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Consulta um recurso localizado do tipo System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap istockphoto_692279886_1024x1024 {
             get {
                 object obj = ResourceManager.GetObject("istockphoto-692279886-1024x1024", resourceCulture);

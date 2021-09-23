@@ -9,14 +9,41 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using MySql.Data.MySqlClient;
 
+
 namespace How
 {
     public partial class dbEstoque : Form
 
     {
         
-        string qtdResultado = "";
+        string qtdResultado = "0";
         
+        private void retirarProduto() //função criada para realizar conexão com o DB e retirar uma quantidade de produtos
+        {
+            MySqlConnectionStringBuilder conexaoBD = conexaoBanco();
+            MySqlConnection realizaConexacoBD = new MySqlConnection(conexaoBD.ToString());
+            try
+            {
+                realizaConexacoBD.Open(); //Abre a conexão com o banco
+
+                MySqlCommand comandoMySql = realizaConexacoBD.CreateCommand(); //Crio um comando SQL
+                comandoMySql.CommandText = "UPDATE produto SET qtdProduto= '" + qtdResultado + "' " +
+                    " WHERE idProduto = " + tbId.Text + "";
+                comandoMySql.ExecuteNonQuery();
+
+                realizaConexacoBD.Close(); // Fecho a conexão com o banco
+                
+                atualizarGrid();
+                limparCampos();
+                qtdResultado = ""; //limpa a váriavel
+            }
+            catch (Exception ex)
+            {
+                //MessageBox.Show("Não foi possivel abrir a conexão! ");
+                Console.WriteLine(ex.Message);
+
+            }
+        }
 
         public dbEstoque()
         {
@@ -48,12 +75,13 @@ namespace How
         {
             MySqlConnectionStringBuilder conexaoBD = conexaoBanco();
             MySqlConnection realizaConexacoBD = new MySqlConnection(conexaoBD.ToString());
+            btnAdcionar.Enabled = true;
             try
             {
                 realizaConexacoBD.Open();
 
                 MySqlCommand comandoMySql = realizaConexacoBD.CreateCommand();
-                comandoMySql.CommandText = "SELECT * FROM produto";
+                comandoMySql.CommandText = "SELECT * FROM `produto` WHERE `ativoProduto` = 1 ";
                 MySqlDataReader reader = comandoMySql.ExecuteReader();
 
                 dgStorage.Rows.Clear();
@@ -74,17 +102,20 @@ namespace How
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Can not open connection ! ");
+                MessageBox.Show("Não foi possível conectar com o banco de dados. Verifique a conexão!");
                 Console.WriteLine(ex.Message);
             }
         }
         private void Form1_Load(object sender, EventArgs e)
         {
             atualizarGrid();
+            
         }
+      
 
         private void btnAdicionar_Click(object sender, EventArgs e)
         {
+            
             MySqlConnectionStringBuilder conexaoBD = conexaoBanco();
             MySqlConnection realizaConexacoBD = new MySqlConnection(conexaoBD.ToString());
             try
@@ -97,9 +128,9 @@ namespace How
                 comandoMySql.ExecuteNonQuery();
 
                 realizaConexacoBD.Close();
-                MessageBox.Show("Parabéns\nInserido com sucesso");
+                MessageBox.Show("Inserido com sucesso");
                 atualizarGrid();
-                //limparCampos();
+                limparCampos();
 
             }
             catch (Exception ex)
@@ -111,23 +142,24 @@ namespace How
         private void button1_Click(object sender, EventArgs e)
         {
             limparCampos();
-        }
-
-        private void button7_Click(object sender, EventArgs e)
-        {
-            limparCampos();
+            btnAdicionar.Enabled = true;
+            atualizarGrid();
         }
 
         private void dgStorage_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
-            dgStorage.Rows[e.RowIndex].Cells["columnRetirar"].ToolTipText = "Clique aqui para retirar.";
+            
             dgStorage.Rows[e.RowIndex].Cells["columnEditar"].ToolTipText = "Clique aqui para editar.";
+            
         }
 
         private void dgStorage_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
+            
+            Console.WriteLine(sender.ToString());
+            Console.WriteLine(e);
             if (dgStorage.Rows[e.RowIndex].Cells["columnEditar"].Value != null)
-            {
+            {   
                 dgStorage.CurrentRow.Selected = true;
                 //preenche os textbox com as células da linha selecionada
                 tbName.Text = dgStorage.Rows[e.RowIndex].Cells["columnNome"].FormattedValue.ToString();
@@ -136,21 +168,16 @@ namespace How
                 tbId.Text = dgStorage.Rows[e.RowIndex].Cells["columnId"].FormattedValue.ToString();
                 tbCor.Text = dgStorage.Rows[e.RowIndex].Cells["columnCor"].FormattedValue.ToString();
                 tbTamanho.Text = dgStorage.Rows[e.RowIndex].Cells["columnTamanho"].FormattedValue.ToString();
-                        
-            }
-
-             if(dgStorage.Rows[e.RowIndex].Cells["columnRetirar"].Value != null)
-            {
-
-                btnRetirar.Enabled = true;
-                labelRetirar.Enabled = true;
-                tbRetirar.Enabled = true;
+                btnAdicionar.Enabled = false;
 
             }
+
+             
         }
 
         private void btnAtualizar_Click(object sender, EventArgs e)
         {
+            atualizarGrid();
             MySqlConnectionStringBuilder conexaoBD = conexaoBanco();
             MySqlConnection realizaConexacoBD = new MySqlConnection(conexaoBD.ToString());
             try
@@ -170,6 +197,7 @@ namespace How
                 MessageBox.Show("Sucesso\nAtualizado com sucesso"); //Exibo mensagem de aviso
                 atualizarGrid();
                 limparCampos();
+                btnAdicionar.Enabled = true;
             }
             catch (Exception ex)
             {
@@ -179,35 +207,162 @@ namespace How
         }
 
         private void btnRetirar_Click(object sender, EventArgs e)
-        {
-            qtdResultado = (int.Parse(tbQtd.Text) - int.Parse(tbRetirar.Text)).ToString();
 
-            MySqlConnectionStringBuilder conexaoBD = conexaoBanco();
-            MySqlConnection realizaConexacoBD = new MySqlConnection(conexaoBD.ToString());
+        {
+            if (MessageBox.Show("Tem certeza que deseja retirar " + tbRetirar.Text + " produtos?", "Confirmação", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No)
+            {
+
+            }
+            
+            else {
+                qtdResultado = (int.Parse(tbQtd.Text) - int.Parse(tbRetirar.Text)).ToString();
+
+                if (int.Parse(qtdResultado) < 0)
+                {
+                    MessageBox.Show("Quantidade insuficiente em estoque");
+                }
+                else if (int.Parse(qtdResultado) < 10)
+                {
+                    MessageBox.Show("Atenção estoque baixo");
+                    retirarProduto();
+                    MessageBox.Show("Retirado com sucesso"); //Exibo mensagem de aviso
+                }
+
+                else
+                {
+
+                    retirarProduto();
+                    MessageBox.Show("Retirado com sucesso"); //Exibo mensagem de aviso
+                    qtdResultado = "0";
+                }
+
+                btnAdicionar.Enabled = true;
+            } }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            btnAdicionar.Enabled = true;
+            {
+                MySqlConnectionStringBuilder conexaoBD = conexaoBanco();
+                MySqlConnection realizaConexacoBD = new MySqlConnection(conexaoBD.ToString());
+                try
+                {
+                    realizaConexacoBD.Open(); //Abre a conexão com o banco
+
+                    MySqlCommand comandoMySql = realizaConexacoBD.CreateCommand(); //Crio um comando SQL
+                                                                                   // "DELETE FROM filme WHERE idFilme = "+ textBoxId.Text +""
+                    comandoMySql.CommandText = "UPDATE produto SET ativoProduto = 0 WHERE idProduto = " + tbId.Text + "";
+                    comandoMySql.ExecuteNonQuery();
+
+                    realizaConexacoBD.Close(); // Fecho a conexão com o banco
+                    MessageBox.Show("Deletado com sucesso"); //Exibo mensagem de aviso
+                    atualizarGrid();
+                    limparCampos();
+                    
+                }
+                catch (Exception ex)
+                {
+                    //MessageBox.Show("Não foi possivel abrir a conexão! ");
+                    Console.WriteLine(ex.Message);
+                }
+                
+            }
+        }
+
+       
+
+        private void tbName_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            string searchQuery = tbName.Text;
+            MySqlConnectionStringBuilder conectionDB = conexaoBanco();
+            MySqlConnection doConection = new MySqlConnection(conectionDB.ToString());
             try
             {
-                realizaConexacoBD.Open(); //Abre a conexão com o banco
+                doConection.Open();
 
-                MySqlCommand comandoMySql = realizaConexacoBD.CreateCommand(); //Crio um comando SQL
-                comandoMySql.CommandText = "UPDATE produto SET nomeProduto= '" + tbName.Text + "', " +
-                    "refProduto = '" + tbRef.Text + "', " +
-                    "qtdProduto = '" + qtdResultado + "', " +
-                    "corProduto = '" + tbCor.Text + "', " +
-                    "tamanhoProduto = '" + tbTamanho.Text + "' " +
-                    " WHERE idProduto = " + tbId.Text + "";
-                comandoMySql.ExecuteNonQuery();
+                MySqlCommand commandMysql = doConection.CreateCommand();
+                commandMysql.CommandText = "SELECT * FROM produto WHERE nomeProduto LIKE '" + searchQuery + "%'";
+                MySqlDataReader reader = commandMysql.ExecuteReader();
 
-                realizaConexacoBD.Close(); // Fecho a conexão com o banco
-                MessageBox.Show("Retirado com sucesso"); //Exibo mensagem de aviso
-                atualizarGrid();
-                limparCampos();
-                qtdResultado = "";
+                dgStorage.Rows.Clear();
+
+                while (reader.Read())
+                {
+                    DataGridViewRow row = (DataGridViewRow)dgStorage.Rows[0].Clone();
+                    row.Cells[0].Value = reader.GetInt32(0); //id
+                    row.Cells[1].Value = reader.GetString(1); //prouto
+                    row.Cells[2].Value = reader.GetString(2); //sexo
+                    row.Cells[3].Value = reader.GetString(3); //tamanho
+                    row.Cells[4].Value = reader.GetString(4); //cor
+                    row.Cells[5].Value = reader.GetString(5); //quantidade
+                    dgStorage.Rows.Add(row); //Add linha na tabela
+                }
+                doConection.Close();
+
+
             }
+
             catch (Exception ex)
             {
-                //MessageBox.Show("Não foi possivel abrir a conexão! ");
+                MessageBox.Show("Can't open connetion");
                 Console.WriteLine(ex.Message);
             }
+        }
+
+        private void tbRef_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            string searchQuery = tbRef.Text;
+            MySqlConnectionStringBuilder conectionDB = conexaoBanco();
+            MySqlConnection doConection = new MySqlConnection(conectionDB.ToString());
+            try
+            {
+                doConection.Open();
+
+                MySqlCommand commandMysql = doConection.CreateCommand();
+                commandMysql.CommandText = "SELECT * FROM produto WHERE refProduto LIKE '" + searchQuery + "%'";
+                MySqlDataReader reader = commandMysql.ExecuteReader();
+
+                dgStorage.Rows.Clear();
+
+                while (reader.Read())
+                {
+                    DataGridViewRow row = (DataGridViewRow)dgStorage.Rows[0].Clone();
+                    row.Cells[0].Value = reader.GetInt32(0); //id
+                    row.Cells[1].Value = reader.GetString(1); //prouto
+                    row.Cells[2].Value = reader.GetString(2); //sexo
+                    row.Cells[3].Value = reader.GetString(3); //tamanho
+                    row.Cells[4].Value = reader.GetString(4); //cor
+                    row.Cells[5].Value = reader.GetString(5); //quantidade
+                    dgStorage.Rows.Add(row); //Add linha na tabela
+                }
+                doConection.Close();
+
+
+            }
+
+            catch (Exception ex)
+            {
+                MessageBox.Show("Can't open connetion");
+                Console.WriteLine(ex.Message);
+            }
+        }
+
+        private void btnAdcionar_Click(object sender, EventArgs e)
+        {
+            
+
+            qtdResultado = (int.Parse(tbQtd.Text) + int.Parse(tbRetirar.Text)).ToString();
+
+            if (MessageBox.Show("Tem certeza que deseja adicionar " + tbRetirar.Text + " produtos?", "Confirmação", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No)
+            {
+
+            }
+            else
+            {
+                retirarProduto();
+                MessageBox.Show("Adicionado com sucesso");//Exibo mensagem de aviso
+                qtdResultado = "0";
+            } 
         }
     }
 }

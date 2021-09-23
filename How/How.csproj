@@ -91,5 +91,8 @@
   <ItemGroup>
     <None Include="Resources\istockphoto-692279886-1024x1024.png" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Ativo 11.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
